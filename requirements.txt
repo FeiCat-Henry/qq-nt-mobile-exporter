@@ -1,0 +1,10 @@
+# 手机端链路(Frida)才需要
+frida>=17.0
+frida-tools>=14.0
+
+# 只有 tools/analyze_libkernel.py 需要(可选):
+#   pip install capstone pyelftools
+#
+# qq_exporter.py 的「电脑端解密」分支需要:
+#   pip install cryptography
+# 但手机端导出的明文库走的是直读路径, 不需要它。

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QQ 聊天记录导出器</title>
+<style>
+:root{--blue:#0f7be0;--blue2:#12b7f5;--ink:#1c2430;--sub:#66738a;--line:#e4e8ef;--bg:#f2f4f7;--ok:#0e9f6e;--err:#dc2626}
+*{box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:28px 16px 60px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:0 0 2px;display:flex;align-items:center;gap:10px}
+h1 .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.desc{color:var(--sub);font-size:13px;margin-bottom:22px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.step{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=text]{flex:1;min-width:260px;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:14px;outline:none}
+input[type=text]:focus{border-color:var(--blue)}
+button{border:none;border-radius:9px;padding:9px 18px;font-size:14px;cursor:pointer;background:var(--blue);color:#fff;transition:.15s}
+button:hover{filter:brightness(1.08)}
+button:disabled{background:#b9c3d0;cursor:not-allowed}
+button.ghost{background:#eef3f9;color:var(--blue)}
+.banner{border-radius:10px;padding:10px 14px;font-size:13.5px;margin:12px 0;display:none;white-space:pre-wrap}
+.banner.err{background:#fdecec;color:var(--err);display:block}
+.banner.ok{background:#e7f7f0;color:var(--ok);display:block}
+.acct{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;margin:8px 0;cursor:pointer;transition:.12s}
+.acct.on{border-color:var(--blue);background:#f3f9ff}
+.acct .qq{font-size:17px;font-weight:600}
+.acct .meta{color:var(--sub);font-size:12.5px}
+.ring{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.tools{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.tools input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13.5px;outline:none}
+.chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--sub)}
+.chip.on{border-color:var(--blue);color:var(--blue);background:#f3f9ff}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{color:var(--sub);font-weight:500;font-size:12.5px;text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+td{padding:9px 8px;border-bottom:1px solid #f0f2f6;vertical-align:middle}
+tr:hover td{background:#fafbfd}
+.name{font-weight:600}
+.qqnum{color:var(--sub);font-size:12.5px}
+.badge{font-size:11.5px;border-radius:6px;padding:2px 8px;display:inline-block}
+.badge.c2c{background:#e8f4ff;color:#0b6bcb}
+.badge.group{background:#e8fdf3;color:#0e8f5e}
+.num{text-align:right;font-variant-numeric:tabular-nums;color:#33405a}
+.bar{height:8px;background:#edf1f6;border-radius:6px;overflow:hidden;margin:6px 0}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--blue2));width:0%;transition:width .3s}
+.stage{font-size:13.5px;color:var(--ink)}
+.filelist{margin-top:10px}
+.fitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:14px}
+.fitem .fpath{color:var(--sub);font-size:12px;word-break:break-all}
+.dim{color:var(--sub);font-size:12.5px}
+.foot{color:#9aa5b5;font-size:12px;text-align:center;margin-top:26px;line-height:1.8}
+select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13.5px;outline:none;background:#fff}
+.empty{color:var(--sub);font-size:13.5px;padding:18px 4px}
+label.ck{display:flex;align-items:center;gap:8px;cursor:pointer}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="logo">Q</span>QQ 聊天记录导出器</h1>
+  <div class="desc">选择数据目录 → 选择账号 → 勾选要导出的聊天 → 一键导出。所有数据仅在本机处理，不联网、不修改 QQ 原始数据。</div>
+
+  <div class="card">
+    <h2><span class="step">1</span>数据目录（Tencent Files 所在位置）</h2>
+    <div class="row">
+      <input type="text" id="root" placeholder="例如 E:\QQInfo\Tencent Files">
+      <button id="btnScan">扫描账号</button>
+    </div>
+    <div class="banner err" id="scanErr"></div>
+    <div id="acctBox"></div>
+  </div>
+
+  <div class="card hidden" id="convCard">
+    <h2><span class="step">3</span>选择要导出的聊天记录 <span class="dim" id="convMeta"></span></h2>
+    <div class="tools">
+      <input type="text" id="search" placeholder="搜索名称 / QQ号 / 群号…" style="width:220px">
+      <span class="chip on" data-f="all">全部</span>
+      <span class="chip" data-f="c2c">好友</span>
+      <span class="chip" data-f="group">群聊</span>
+      <span style="flex:1"></span>
+      <span class="chip" id="selAll">全选</span>
+      <span class="chip" id="selNone">清空</span>
+    </div>
+    <div style="max-height:420px;overflow:auto">
+      <table>
+        <thead><tr>
+          <th style="width:36px"></th><th>对象</th><th style="width:100px">类型</th>
+          <th class="num" style="width:90px" data-s="count">消息数 ▾</th>
+          <th class="num" style="width:200px" data-s="tmax">最近消息时间</th>
+        </tr></thead>
+        <tbody id="convBody"></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="dim">已选 <b id="selCount">0</b> 项 · 格式</span>
+      <select id="fmt"><option value="txt">TXT 文本</option><option value="html">HTML 网页(带气泡)</option><option value="csv">CSV 表格</option></select>
+      <input type="text" id="outdir" style="flex:1;min-width:200px" placeholder="导出目录">
+      <button id="btnExport">一键导出所选</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="progCard">
+    <h2><span class="step">…</span><span id="progTitle">正在处理</span></h2>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="stage" id="stage"></div>
+    <div class="banner err" id="jobErr"></div>
+    <div class="filelist" id="files"></div>
+    <div class="row" id="openRow" style="display:none;margin-top:8px">
+      <button class="ghost" id="btnOpen">打开导出文件夹</button>
+    </div>
+  </div>
+
+  <div class="foot">
+    提示：列表/导出需要 QQ 正在运行且已登录对应账号（用于从内存提取解密密钥）；已解密过的缓存可离线使用。<br>
+    密文数据库在缓存目录中解密为明文副本，QQ 原始数据不受任何影响。
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let state = {root:'', uin:'', convs:[], filter:'all', sort:'count', desc:true, sel:new Set(), lastOutdir:''};
+
+function showErr(id, msg){ const el=$(id); el.textContent=msg; el.classList.add('err'); el.classList.remove('ok'); }
+function clearErr(id){ const el=$(id); el.classList.remove('err','ok'); el.textContent=''; }
+function fmtSize(n){ return n>1e9 ? (n/1e9).toFixed(1)+' GB' : (n/1e6).toFixed(0)+' MB'; }
+function fmtTs(s){ if(!s) return '—'; const d=new Date(s*1000); const p=x=>String(x).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+async function api(path, body){
+  let r;
+  try{
+    r = await fetch(path, body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {});
+  }catch(e){
+    throw new Error('无法连接到本地服务 —— 工具窗口可能已关闭。\n请重新双击「启动导出器.bat」, 然后刷新本页。');
+  }
+  const j = await r.json().catch(()=>({error:'响应异常'}));
+  if(!r.ok || j.error) throw new Error(j.error || ('请求失败 '+r.status));
+  return j;
+}
+
+// ── 步骤1: 扫描账号 ──
+$('btnScan').onclick = scan;
+$('root').addEventListener('keydown', e=>{ if(e.key==='Enter') scan(); });
+
+async function scan(){
+  clearErr('scanErr'); $('acctBox').innerHTML='';
+  const root = $('root').value.trim();
+  if(!root){ showErr('scanErr','请先填写目录路径'); return; }
+  $('btnScan').disabled = true; $('btnScan').textContent = '扫描中…';
+  try{
+    const j = await api('/api/scan', {root});
+    localStorage.setItem('qq_root', root);
+    state.root = root;
+    renderAccounts(j.accounts);
+  }catch(e){ showErr('scanErr', e.message); }
+  $('btnScan').disabled = false; $('btnScan').textContent = '扫描账号';
+}
+
+function renderAccounts(list){
+  const box = $('acctBox');
+  box.innerHTML = '';
+  list.forEach((a,i)=>{
+    const el = document.createElement('div');
+    el.className = 'acct' + (i===0 ? ' on':'');
+    el.innerHTML = `<div class="ring">${a.uin.slice(-1)}</div>
+      <div style="flex:1"><div class="qq">${a.uin}</div>
+      <div class="meta">数据 ${fmtSize(a.dbsize)} · 最近使用 ${fmtTs(a.mtime)}</div></div>
+      <button>加载聊天列表</button>`;
+    el.onclick = ev=>{ if(ev.target.tagName==='BUTTON') return;
+      box.querySelectorAll('.acct').forEach(x=>x.classList.remove('on')); el.classList.add('on'); };
+    el.querySelector('button').onclick = ()=>{
+      box.querySelectorAll('.acct').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+      prepare(a.uin);
+    };
+    box.appendChild(el);
+  });
+}
+
+// ── 步骤2: 加载会话列表(后台任务) ──
+async function prepare(uin){
+  state.uin = uin;
+  $('convCard').classList.add('hidden');
+  showProgress('正在加载账号 '+uin+' 的聊天列表');
+  try{
+    const j = await api('/api/prepare', {root:state.root, uin, refresh:false});
+    const res = await waitJob(j.job);
+    state.convs = res.conversations;
+    state.sel.clear();
+    $('convMeta').textContent = `账号 ${uin} · 共 ${res.conversations.length} 个会话`;
+    renderConvs();
+    $('convCard').classList.remove('hidden');
+    hideProgress();
+  }catch(e){
+    showProgress('加载失败'); showErr('jobErr', e.message+'\n若提示找不到密钥：请确认 QQ 已运行并登录该账号后重试。');
+  }
+}
+
+// ── 步骤3: 会话表 ──
+$('search').oninput = renderConvs;
+document.querySelectorAll('.chip[data-f]').forEach(c=>{
+  c.onclick = ()=>{ document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on'); state.filter = c.dataset.f; renderConvs(); };
+});
+document.querySelectorAll('th[data-s]').forEach(th=>{
+  th.onclick = ()=>{ const k = th.dataset.s;
+    if(state.sort===k) state.desc = !state.desc; else { state.sort=k; state.desc=true; }
+    renderConvs(); };
+});
+$('selAll').onclick = ()=>{ visList().forEach(c=>state.sel.add(c.kind+':'+c.key)); renderConvs(); };
+$('selNone').onclick = ()=>{ state.sel.clear(); renderConvs(); };
+
+function visList(){
+  const kw = $('search').value.trim().toLowerCase();
+  let list = state.convs.filter(c=> state.filter==='all' || c.kind===state.filter);
+  if(kw) list = list.filter(c => (c.name||'').toLowerCase().includes(kw) || (c.uin||'').includes(kw) || c.key.toLowerCase().includes(kw));
+  const k = state.sort;
+  list.sort((a,b)=> (state.desc ? -1:1) * ((a[k]||0)-(b[k]||0)));
+  return list;
+}
+
+function renderConvs(){
+  const tb = $('convBody'); tb.innerHTML='';
+  visList().forEach(c=>{
+    const id = c.kind+':'+c.key;
+    const tr = document.createElement('tr');
+    const label = (c.name ? `<span class="name">${esc(c.name)}</span> ` : '') +
+      `<span class="qqnum">${c.uin ? c.uin : c.key}</span>`;
+    tr.innerHTML = `<td><input type="checkbox" ${state.sel.has(id)?'checked':''}></td>
+      <td>${label}</td>
+      <td><span class="badge ${c.kind}">${c.kind==='c2c'?'好友':'群聊'}</span></td>
+      <td class="num">${c.count.toLocaleString()}</td>
+      <td class="num">${fmtTs(c.tmax)}</td>`;
+    tr.querySelector('input').onchange = ev=>{
+      ev.target.checked ? state.sel.add(id) : state.sel.delete(id); updateSel(); };
+    tr.ondblclick = ()=> prepareExportOne(c);
+    tb.appendChild(tr);
+  });
+  updateSel();
+}
+function updateSel(){ $('selCount').textContent = state.sel.size; }
+function esc(s){ return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function selectedItems(){
+  return [...state.sel].map(id=>{ const [kind,key]=id.split(':'); const c=state.convs.find(x=>x.kind===kind&&x.key===key);
+    return c ? {kind, key, name:c.name||'', uin:c.uin||''} : null; }).filter(Boolean);
+}
+async function prepareExportOne(c){ // 双击快捷导出单个
+  state.sel.clear(); state.sel.add(c.kind+':'+c.key); renderConvs(); doExport();
+}
+
+// ── 导出 ──
+$('btnExport').onclick = doExport;
+async function doExport(){
+  const items = selectedItems();
+  if(!items.length){ alert('请先勾选要导出的聊天'); return; }
+  const fmt = $('fmt').value;
+  let outdir = $('outdir').value.trim();
+  if(!outdir){ outdir = window.__exportDefault || ''; $('outdir').value = outdir; }
+  showProgress(`正在导出 ${items.length} 个聊天…`);
+  try{
+    const j = await api('/api/export', {root:state.root, uin:state.uin, items, format:fmt, outdir, refresh:false});
+    const res = await waitJob(j.job);
+    state.lastOutdir = outdir;
+    const ok = (res||[]).filter(f=>f.file);
+    const bad = (res||[]).filter(f=>f.error);
+    const box = $('files'); box.innerHTML='';
+    ok.forEach(f=>{ const el=document.createElement('div'); el.className='fitem';
+      el.innerHTML = `<div style="flex:1"><div>${esc(f.name)} <span class="dim">(${f.count}条${f.fail? '，'+f.fail+'条损坏':''})</span></div><div class="fpath">${esc(f.file)}</div></div>`;
+      box.appendChild(el); });
+    bad.forEach(f=>{ const el=document.createElement('div'); el.className='fitem';
+      el.innerHTML = `<div style="flex:1;color:var(--err)">${esc(f.error)}</div>`; box.appendChild(el); });
+    if(ok.length){ $('openRow').style.display='flex'; $('progTitle').textContent = `导出完成：成功 ${ok.length} 个` + (bad.length?`，失败 ${bad.length} 个`:''); }
+    else { $('progTitle').textContent = '导出完成（无成功项）'; }
+  }catch(e){
+    $('progTitle').textContent='导出失败'; showErr('jobErr', e.message);
+  }
+}
+$('btnOpen').onclick = ()=> api('/api/open', {path: state.lastOutdir}).catch(e=>alert(e.message));
+
+// ── 任务轮询 ──
+function showProgress(title){
+  $('progCard').classList.remove('hidden');
+  $('progTitle').textContent = title;
+  $('bar').style.width = '2%'; $('stage').textContent = '准备中…';
+  clearErr('jobErr'); $('files').innerHTML=''; $('openRow').style.display='none';
+}
+function hideProgress(){ /* 保留结果卡片显示 */ }
+async function waitJob(id){
+  while(true){
+    const j = await api('/api/job?id='+id);
+    $('bar').style.width = Math.round(j.pct*100)+'%';
+    $('stage').textContent = j.stage;
+    if(j.done){
+      if(j.error) throw new Error(j.error);
+      return j.result;
+    }
+    await new Promise(r=>setTimeout(r, 400));
+  }
+}
+
+// ── 初始化 ──
+(async ()=>{
+  try{
+    const j = await (await fetch('/api/ping')).json();
+    if(j.default_root){ window.__exportDefault = j.export_default || '';
+      if(j.export_default) $('outdir').value = j.export_default; }
+    const saved = localStorage.getItem('qq_root');
+    $('root').value = saved || j.default_root || '';
+    if($('root').value) scan();
+  }catch(e){
+    showErr('scanErr','无法连接本地服务 —— 工具窗口可能已关闭。\n请重新双击「启动导出器.bat」, 然后刷新本页。');
+  }
+})();
+</script>
+</body>
+</html>
